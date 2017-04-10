@@ -4,40 +4,56 @@ import android.graphics.Point;
 import android.media.MediaPlayer;
 import android.os.CountDownTimer;
 import android.os.Message;
+import android.support.v4.view.MotionEventCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Display;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class MainActivity extends AppCompatActivity {
     RelativeLayout relativeLayout;
-    ImageView imageView1;
-    ImageView imageView2;
-    ImageView imageView3;
-    ImageView imageView4;
-    ImageView imageView5;
-    ImageView imageView6;
-    ImageView imageView7;
-    ImageView imageView8;
-    ImageView imageView9;
-    MediaPlayer mp1;
-    MediaPlayer mp2;
-    MediaPlayer mp3;
-    MediaPlayer mp4;
-    MediaPlayer mp5;
-    MediaPlayer mp6;
-    MediaPlayer mp7;
-    MediaPlayer mp8;
-    MediaPlayer mp9;
+    List<ImageView> listView;
+    List<MediaPlayer> listMedia;
+
+    // key nao dc nhan thi minh them vao, nha ra thi xoa
+    private List<PressedKeyInfo> pressedKeyInfos;
+    class PressedKeyInfo{
+        private ImageView ivKey;
+        private int pointerId;
+
+        public PressedKeyInfo(ImageView ivKey, int pointerId) {
+            this.ivKey = ivKey;
+            this.pointerId = pointerId;
+        }
+
+        public ImageView getIvKey() {
+            return ivKey;
+        }
+
+        public int getPointerId() {
+            return pointerId;
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        listView = new ArrayList<>();
+        listMedia = new ArrayList<>();
+        pressedKeyInfos = new ArrayList<>();
 
         setContentView(R.layout.activity_main);
-        set();
+        setRelativeLayOut();
+
+
         //Toast.makeText(MainActivity.this , "Hello", Toast.LENGTH_LONG).show();
     }
 
@@ -46,108 +62,135 @@ public class MainActivity extends AppCompatActivity {
             mp.release();
         }
     }
-    void setEnterButton(final ImageView imageView , final String mp3String ){
 
-        imageView.setOnClickListener(new View.OnClickListener(){
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
 
-            @Override
-            public void onClick(View v) {
-               //checkMedia();
-                switch(mp3String){
-                    case "chungta1":{
-                        checkMedia(mp1);
-                          mp1  = MediaPlayer.create(MainActivity.this , R.raw.chungta1);
-                        mp1.start();
-                        break;
-                    }
-                    case "chungta2":{
-                        checkMedia(mp2);
-                         mp2  = MediaPlayer.create(MainActivity.this , R.raw.chungta2);
-                        mp2.start();
-                        break;
-                    }
-                    case "chungta3":{
-                        checkMedia(mp3);
-                         mp3  = MediaPlayer.create(MainActivity.this , R.raw.chungta3);
-                        mp3.start();
-                        break;
-                    }
-                    case "chungta4":{
-                        checkMedia(mp4);
-                         mp4  = MediaPlayer.create(MainActivity.this , R.raw.chungta4);
-                        mp4.start();
-                        break;
-                    }
-                    case "chungta5":{
-                        checkMedia(mp5);
-                         mp5  = MediaPlayer.create(MainActivity.this , R.raw.chungta5);
-                        mp5.start();
-                        break;
-                    }
-                    case "chungta6":{
-                        checkMedia(mp6);
-                          mp6  = MediaPlayer.create(MainActivity.this , R.raw.chungta6);
-                        mp6.start();
-                        break;
-                    }
-                    case "chungta7":{
-                        checkMedia(mp7);
-                         mp7  = MediaPlayer.create(MainActivity.this , R.raw.chungta7);
-                        mp7.start();
-                        break;
-                    }
-                    case "chungta8":{
-                        checkMedia(mp8);
-                        mp8  = MediaPlayer.create(MainActivity.this , R.raw.chungta8);
-                        mp8.start();
-                        break;
-                    }
-                    case "chungta9":{
-                        checkMedia(mp9);
-                        mp9  = MediaPlayer.create(MainActivity.this , R.raw.chungta9);
-                        mp9.start();
-                        break;
+        //  Log.d(TAG , String.format("  BLABLA %s %s" ,event.getX() , event.getY()) );
+        // get index moi nhat
+        int poniterIndex = MotionEventCompat.getActionIndex(event);
+        // get id  boi index
+        int pointerID = event.getPointerId(poniterIndex);
+        // get toa do x, y touch
+        float pointerX = event.getX(poniterIndex);
+        float pointerY = event.getY(poniterIndex);
+        // khai bao 1 point action
+        int pointerAction = event.getActionMasked();
+
+        if(pointerAction == MotionEvent.ACTION_MOVE){
+            for(int pointerIndex = 0; pointerIndex < event.getPointerCount(); pointerIndex++) {
+                int pointerId = event.getPointerId(pointerIndex);
+                float pointerX1 = event.getX(pointerIndex);
+                float pointerY1 = event.getY(pointerIndex);
+                for(int i=0 ; i < pressedKeyInfos.size() ; i++){
+                    PressedKeyInfo pressedKeyInfo = pressedKeyInfos.get(i);
+                    if(pressedKeyInfo.getPointerId() == pointerId
+                            && !isInside(pointerX1,pointerY1,pressedKeyInfo.getIvKey())){
+                        // Touch move out size
+                        pressedKeyInfos.remove(i);
+                        setPressed(pressedKeyInfo.getIvKey(),false);
+
+                      /*  if(findPressedKey(pointerX1,pointerY1) != null){
+                            PressedKeyInfo  pressTemp = new PressedKeyInfo(findPressedKey(pointerX1,pointerY1),pointerId);
+
+
+                                pressedKeyInfos.add(pressTemp);
+
+
+                            setPressed(pressTemp.getIvKey(),true);
+                        }*/
+
                     }
                 }
-
-
-
-                imageView.setImageResource(R.drawable.press);
-
-                new CountDownTimer(100,100) {
-                    @Override
-                    public void onTick(long millisUntilFinished) {
-                    }
-                    @Override
-                    public void onFinish() {
-                        imageView.setImageResource(R.drawable.enter);
-                    }
-                }.start() ;
             }
-        });
 
+
+        }
+        ImageView pressedKey = findPressedKey(pointerX,pointerY);
+        if(pressedKey != null){
+            if(pointerAction == MotionEvent.ACTION_DOWN || pointerAction ==MotionEvent.ACTION_POINTER_DOWN  || pointerAction == MotionEvent.ACTION_MOVE ){
+
+                    if(!containsKeyInfoWith(pressedKey)){
+                        pressedKeyInfos.add(new PressedKeyInfo(pressedKey,pointerID));
+                    }
+
+                setPressed(pressedKey,true);
+            } else if(pointerAction == MotionEvent.ACTION_UP || pointerAction ==MotionEvent.ACTION_POINTER_UP ){
+                for(int i=0 ; i < pressedKeyInfos.size() ; i++){
+
+                    PressedKeyInfo pressedKeyInfo = pressedKeyInfos.get(i);
+                    if(pressedKeyInfo.getPointerId() == pointerID) {
+
+                        pressedKeyInfos.remove(i);
+
+                    }
+                }
+                setPressed(pressedKey,false);
+            }
+        }
+
+
+
+        return super.onTouchEvent(event);
     }
 
-    void set(){
-        imageView1 = (ImageView) findViewById(R.id.imageView1);
-        imageView2 = (ImageView) findViewById(R.id.imageView2);
-        imageView3 = (ImageView) findViewById(R.id.imageView3);
-        imageView4 = (ImageView) findViewById(R.id.imageView4);
-        imageView5 = (ImageView) findViewById(R.id.imageView5);
-        imageView6 = (ImageView) findViewById(R.id.imageView6);
-        imageView7 = (ImageView) findViewById(R.id.imageView7);
-        imageView8 = (ImageView) findViewById(R.id.imageView8);
-        imageView9 = (ImageView) findViewById(R.id.imageView9);
-        setEnterButton(imageView1 , "chungta1");
-        setEnterButton(imageView2, "chungta2");
-        setEnterButton(imageView3,  "chungta3");
-        setEnterButton(imageView4, "chungta4");
-        setEnterButton(imageView5 , "chungta5");
-        setEnterButton(imageView6, "chungta6");
-        setEnterButton(imageView7 , "chungta7");
-        setEnterButton(imageView8, "chungta8");
-        setEnterButton(imageView9, "chungta9");
 
+    private boolean containsKeyInfoWith(ImageView iv){
+        for(PressedKeyInfo pressedKeyInfo: pressedKeyInfos){
+            if(pressedKeyInfo.getIvKey() == iv){
+                return true;
+            }
+        }
+        return false;
+    }
+    private ImageView findPressedKey(float pointX , float pointY){
+        for(ImageView v : listView){
+            if(isInside(pointX, pointY, v)){
+                return v;
+            }
+        }
+        return null;
+    }
+
+    private void setPressed(ImageView view , boolean isPressed){
+        if(isPressed){
+           view.setImageResource(R.drawable.press);
+            listMedia.get(listView.indexOf(view)).start();
+        } else {
+            view.setImageResource(R.drawable.enter);
+        }
+    }
+
+    private boolean isInside(float x , float y , View v){
+        int[] location = new int[2];
+        v.getLocationOnScreen(location);
+        int left = location[0];
+        int top = location[1];
+        int right = left + v.getWidth();
+        int bottom = top + v.getHeight();
+        return x > left && x < right && y > top && y < bottom ;
+    }
+
+    void setRelativeLayOut(){
+        listView.add( (ImageView) findViewById(R.id.imageView1));
+        listView.add( (ImageView) findViewById(R.id.imageView2));
+        listView.add( (ImageView) findViewById(R.id.imageView3));
+        listView.add( (ImageView) findViewById(R.id.imageView4));
+        listView.add( (ImageView) findViewById(R.id.imageView5));
+        listView.add( (ImageView) findViewById(R.id.imageView6));
+        listView.add( (ImageView) findViewById(R.id.imageView7));
+        listView.add( (ImageView) findViewById(R.id.imageView8));
+        listView.add( (ImageView) findViewById(R.id.imageView9));
+
+        listMedia.add(MediaPlayer.create(MainActivity.this , R.raw.chungta1));
+        listMedia.add(MediaPlayer.create(MainActivity.this , R.raw.chungta2));
+        listMedia.add(MediaPlayer.create(MainActivity.this , R.raw.chungta3));
+        listMedia.add(MediaPlayer.create(MainActivity.this , R.raw.chungta4));
+        listMedia.add(MediaPlayer.create(MainActivity.this , R.raw.chungta5));
+        listMedia.add(MediaPlayer.create(MainActivity.this , R.raw.chungta6));
+        listMedia.add(MediaPlayer.create(MainActivity.this , R.raw.chungta7));
+        listMedia.add(MediaPlayer.create(MainActivity.this , R.raw.chungta8));
+        listMedia.add(MediaPlayer.create(MainActivity.this , R.raw.chungta9));
 
         // Set size  relativeLayout
         relativeLayout = (RelativeLayout) findViewById(R.id.activity_main);
@@ -164,8 +207,8 @@ public class MainActivity extends AppCompatActivity {
         } else {
             temp = width;
         }
-        relativeLayout.getLayoutParams().width = temp;
-        relativeLayout.getLayoutParams().height = temp;
+       relativeLayout.getLayoutParams().width = temp;
+       relativeLayout.getLayoutParams().height = temp;
 
 
 
