@@ -68,69 +68,47 @@ public class MainActivity extends AppCompatActivity {
 
         //  Log.d(TAG , String.format("  BLABLA %s %s" ,event.getX() , event.getY()) );
         // get index moi nhat
-        int poniterIndex = MotionEventCompat.getActionIndex(event);
-        // get id  boi index
-        int pointerID = event.getPointerId(poniterIndex);
-        // get toa do x, y touch
-        float pointerX = event.getX(poniterIndex);
-        float pointerY = event.getY(poniterIndex);
-        // khai bao 1 point action
-        int pointerAction = event.getActionMasked();
-
-        if(pointerAction == MotionEvent.ACTION_MOVE){
-            for(int pointerIndex = 0; pointerIndex < event.getPointerCount(); pointerIndex++) {
-                int pointerId = event.getPointerId(pointerIndex);
-                float pointerX1 = event.getX(pointerIndex);
-                float pointerY1 = event.getY(pointerIndex);
-                for(int i=0 ; i < pressedKeyInfos.size() ; i++){
-                    PressedKeyInfo pressedKeyInfo = pressedKeyInfos.get(i);
-                    if(pressedKeyInfo.getPointerId() == pointerId
-                            && !isInside(pointerX1,pointerY1,pressedKeyInfo.getIvKey())){
-                        // Touch move out size
+        for (int pointerIndex = 0; pointerIndex < event.getPointerCount(); pointerIndex++) {
+            int pointerId = event.getPointerId(pointerIndex);
+            float pointerX = event.getX(pointerIndex);
+            float pointerY = event.getY(pointerIndex);
+            int pointerAction = event.getActionMasked();
+            if (pointerAction == MotionEvent.ACTION_MOVE) {
+                for (int i = 0; i < pressedKeyInfos.size(); i++) {
+                    PressedKeyInfo pressKeyInfo = pressedKeyInfos.get(i);
+                    if (pressKeyInfo.getPointerId() == pointerId && !isInside(pointerX, pointerY, pressKeyInfo.getIvKey())) {
+                        //touch moved outside view
                         pressedKeyInfos.remove(i);
-                        setPressed(pressedKeyInfo.getIvKey(),false);
+                        setPressed(pressKeyInfo.getIvKey(), false);
 
-                      /*  if(findPressedKey(pointerX1,pointerY1) != null){
-                            PressedKeyInfo  pressTemp = new PressedKeyInfo(findPressedKey(pointerX1,pointerY1),pointerId);
-
-
-                                pressedKeyInfos.add(pressTemp);
+           }
 
 
-                            setPressed(pressTemp.getIvKey(),true);
-                        }*/
 
-                    }
                 }
             }
 
-
-        }
-        ImageView pressedKey = findPressedKey(pointerX,pointerY);
-        if(pressedKey != null){
-            if(pointerAction == MotionEvent.ACTION_DOWN || pointerAction ==MotionEvent.ACTION_POINTER_DOWN  || pointerAction == MotionEvent.ACTION_MOVE ){
-
-                    if(!containsKeyInfoWith(pressedKey)){
-                        pressedKeyInfos.add(new PressedKeyInfo(pressedKey,pointerID));
+            ImageView pressedKey = findPressedKey(pointerX, pointerY);
+            if (pressedKey != null) {
+                if (pointerAction == MotionEvent.ACTION_DOWN || pointerAction == MotionEvent.ACTION_POINTER_DOWN || pointerAction == MotionEvent.ACTION_MOVE) {
+                    if (!containsKeyInfoWith(pressedKey)) {
+                        pressedKeyInfos.add(new PressedKeyInfo(pressedKey, pointerId));
+                       // setPressed(pressedKey, true);
                     }
+                    setPressed(pressedKey, true);
 
-                setPressed(pressedKey,true);
-            } else if(pointerAction == MotionEvent.ACTION_UP || pointerAction ==MotionEvent.ACTION_POINTER_UP ){
-                for(int i=0 ; i < pressedKeyInfos.size() ; i++){
-
-                    PressedKeyInfo pressedKeyInfo = pressedKeyInfos.get(i);
-                    if(pressedKeyInfo.getPointerId() == pointerID) {
-
-                        pressedKeyInfos.remove(i);
-
-                    }
                 }
-                setPressed(pressedKey,false);
+                if (pointerAction == MotionEvent.ACTION_UP || pointerAction == MotionEvent.ACTION_POINTER_UP) {
+                    for (int i = 0; i < pressedKeyInfos.size(); i++) {
+                        PressedKeyInfo pressKeyInfo = pressedKeyInfos.get(i);
+                        if (pressKeyInfo.getPointerId() == pointerId) {
+                            pressedKeyInfos.remove(i);
+                        }
+                    }
+                    setPressed(pressedKey, false);
+                }
             }
         }
-
-
-
         return super.onTouchEvent(event);
     }
 
