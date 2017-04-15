@@ -1,5 +1,7 @@
 package com.techkid.anh82.drumelectronic;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.graphics.Point;
 import android.media.MediaPlayer;
 import android.os.CountDownTimer;
@@ -15,8 +17,18 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import com.techkid.anh82.drumelectronic.touch.Touch;
+import com.techkid.anh82.drumelectronic.touch.TouchManager;
+
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+
+import static android.view.MotionEvent.ACTION_DOWN;
+import static android.view.MotionEvent.ACTION_MOVE;
+import static android.view.MotionEvent.ACTION_POINTER_DOWN;
+import static android.view.MotionEvent.ACTION_POINTER_UP;
+import static android.view.MotionEvent.ACTION_UP;
 
 public class MainActivity extends AppCompatActivity {
     RelativeLayout relativeLayout;
@@ -52,7 +64,7 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
         setRelativeLayOut();
-
+        SoundManager.loadSoundIntoList(this);
 
         //Toast.makeText(MainActivity.this , "Hello", Toast.LENGTH_LONG).show();
     }
@@ -68,45 +80,66 @@ public class MainActivity extends AppCompatActivity {
 
         //  Log.d(TAG , String.format("  BLABLA %s %s" ,event.getX() , event.getY()) );
         // get index moi nhat
-        for (int pointerIndex = 0; pointerIndex < event.getPointerCount(); pointerIndex++) {
-            int pointerId = event.getPointerId(pointerIndex);
-            float pointerX = event.getX(pointerIndex);
-            float pointerY = event.getY(pointerIndex);
-            int pointerAction = event.getActionMasked();
-            if (pointerAction == MotionEvent.ACTION_MOVE) {
-                for (int i = 0; i < pressedKeyInfos.size(); i++) {
-                    PressedKeyInfo pressKeyInfo = pressedKeyInfos.get(i);
-                    if (pressKeyInfo.getPointerId() == pointerId && !isInside(pointerX, pointerY, pressKeyInfo.getIvKey())) {
-                        //touch moved outside view
-                        pressedKeyInfos.remove(i);
-                        setPressed(pressKeyInfo.getIvKey(), false);
+        List<Touch> touches = TouchManager.toTouches(event);
 
-           }
-
-
+        if(touches.size() > 0){
+            Touch firstTouch = touches.get(0);
+            if(firstTouch.getAction() == ACTION_DOWN || firstTouch.getAction()==ACTION_POINTER_DOWN ){
+                ImageView pressedKey = findPressedKey(firstTouch);
+                if(pressedKey != null && !containsKeyInfoWith(pressedKey)){
+                    pressedKeyInfos.add(new PressedKeyInfo(pressedKey,firstTouch.getId()));
+                    setPressed(pressedKey,true);
+                    SoundManager.playSound(pressedKey.getTag().toString());
+                    // TODO: A PLAY NODE
 
                 }
-            }
+            } else if(firstTouch.getAction()== ACTION_UP ||firstTouch.getAction()== ACTION_POINTER_UP ){
+                Iterator<PressedKeyInfo> iterator = pressedKeyInfos.iterator();
 
-            ImageView pressedKey = findPressedKey(pointerX, pointerY);
-            if (pressedKey != null) {
-                if (pointerAction == MotionEvent.ACTION_DOWN || pointerAction == MotionEvent.ACTION_POINTER_DOWN || pointerAction == MotionEvent.ACTION_MOVE) {
-                    if (!containsKeyInfoWith(pressedKey)) {
-                        pressedKeyInfos.add(new PressedKeyInfo(pressedKey, pointerId));
-                       // setPressed(pressedKey, true);
+                while(iterator.hasNext()){
+                    PressedKeyInfo pressedKeyInfo = iterator.next();
+                    ImageView  ivKey = pressedKeyInfo.getIvKey();
+                    if(firstTouch.getId() == pressedKeyInfo.getPointerId() ){
+                        iterator.remove();
+                        setPressed(ivKey, false);
+
                     }
-                    setPressed(pressedKey, true);
 
                 }
-                if (pointerAction == MotionEvent.ACTION_UP || pointerAction == MotionEvent.ACTION_POINTER_UP) {
-                    for (int i = 0; i < pressedKeyInfos.size(); i++) {
-                        PressedKeyInfo pressKeyInfo = pressedKeyInfos.get(i);
-                        if (pressKeyInfo.getPointerId() == pointerId) {
-                            pressedKeyInfos.remove(i);
+            } else if(firstTouch.getAction() == ACTION_MOVE) {
+
+//                    for(Touch touch:touches){
+//
+//                    }
+                for (Touch touch : touches) {
+                    ImageView pressedKey = findPressedKey(touch);
+                    if(pressedKey != null && !containsKeyInfoWith(pressedKey)){
+                        pressedKeyInfos.add(new PressedKeyInfo(pressedKey, touch.getId()));
+                        setPressed(pressedKey,true);
+                        // TODO: A PLAY NODE
+                        SoundManager.playSound(pressedKey.getTag().toString());
+                    }
+
+                    Iterator<PressedKeyInfo> iterator = pressedKeyInfos.iterator();
+
+                    while(iterator.hasNext()){
+                        PressedKeyInfo pressedKeyInfo = iterator.next();
+                        ImageView  ivKey = pressedKeyInfo.getIvKey();
+                        if(touch.getId() == pressedKeyInfo.getPointerId() && !touch.isInside(ivKey)){
+                            iterator.remove();
+                            setPressed(ivKey, false);
+
                         }
+
                     }
-                    setPressed(pressedKey, false);
+
+
                 }
+
+
+
+
+
             }
         }
         return super.onTouchEvent(event);
@@ -121,33 +154,27 @@ public class MainActivity extends AppCompatActivity {
         }
         return false;
     }
-    private ImageView findPressedKey(float pointX , float pointY){
+    private ImageView findPressedKey(Touch touch){
         for(ImageView v : listView){
-            if(isInside(pointX, pointY, v)){
+            if(touch.isInside(v)){
                 return v;
             }
         }
+
+
         return null;
     }
 
     private void setPressed(ImageView view , boolean isPressed){
         if(isPressed){
            view.setImageResource(R.drawable.press);
-            listMedia.get(listView.indexOf(view)).start();
+
         } else {
             view.setImageResource(R.drawable.enter);
         }
     }
 
-    private boolean isInside(float x , float y , View v){
-        int[] location = new int[2];
-        v.getLocationOnScreen(location);
-        int left = location[0];
-        int top = location[1];
-        int right = left + v.getWidth();
-        int bottom = top + v.getHeight();
-        return x > left && x < right && y > top && y < bottom ;
-    }
+
 
     void setRelativeLayOut(){
         listView.add( (ImageView) findViewById(R.id.imageView1));
@@ -160,15 +187,7 @@ public class MainActivity extends AppCompatActivity {
         listView.add( (ImageView) findViewById(R.id.imageView8));
         listView.add( (ImageView) findViewById(R.id.imageView9));
 
-        listMedia.add(MediaPlayer.create(MainActivity.this , R.raw.chungta1));
-        listMedia.add(MediaPlayer.create(MainActivity.this , R.raw.chungta2));
-        listMedia.add(MediaPlayer.create(MainActivity.this , R.raw.chungta3));
-        listMedia.add(MediaPlayer.create(MainActivity.this , R.raw.chungta4));
-        listMedia.add(MediaPlayer.create(MainActivity.this , R.raw.chungta5));
-        listMedia.add(MediaPlayer.create(MainActivity.this , R.raw.chungta6));
-        listMedia.add(MediaPlayer.create(MainActivity.this , R.raw.chungta7));
-        listMedia.add(MediaPlayer.create(MainActivity.this , R.raw.chungta8));
-        listMedia.add(MediaPlayer.create(MainActivity.this , R.raw.chungta9));
+
 
         // Set size  relativeLayout
         relativeLayout = (RelativeLayout) findViewById(R.id.activity_main);
@@ -190,5 +209,19 @@ public class MainActivity extends AppCompatActivity {
 
 
 
+    }
+    public void onBackPressed() {
+        new AlertDialog.Builder(this)
+                .setMessage("Are you sure to exit?")
+                .setCancelable(false)
+                .setPositiveButton("Yes",
+                        new DialogInterface.OnClickListener() {
+
+                            @Override
+                            public void onClick(DialogInterface arg0, int arg1) {
+
+                                MainActivity.this.finish();
+                            }
+                        }).setNegativeButton("No", null).show();
     }
 }
